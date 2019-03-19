@@ -4,18 +4,23 @@ namespace App\Jobs;
 
 use Illuminate\Bus\Queueable,
     Illuminate\Contracts\Queue\ShouldQueue,
-    GuzzleHttp\Client;
+    GuzzleHttp\Client,
+    App\Jobs\helpers\VkService,
+    App\Jobs\helpers\TelegramService;
 
 class SyncMemasiki implements ShouldQueue
 {
     use Queueable;
-
+    /** @var Client */
     protected $httpClient;
+    /** @var VkService */
+    protected $vkService;
+    /** @var TelegramService */
+    protected $telegramService;
 
     public function handle()
     {
-        $this->setHttpClient();
-
+        $this->init();
         /**
          * !!! what i need?
          *
@@ -25,46 +30,37 @@ class SyncMemasiki implements ShouldQueue
          *
          *  Need to foreach all attachments and add biggest from each of them
          *
-         */
-        $baseUrl = 'https://api.telegram.org/bot' . env('TELEGRAM_BOT_ID');
-
-
-        /**
+         *
          * need to check
          * if post has one attachment ->
          *          then we need to use SendMessage method
          * elseif post has more than one attachment ->
          *          we need to use  sendMediaGroup method and map "text" filed to all of "caption fields"
          */
+        $vkPosts = array_reverse($this->vkService->getVkPosts());
 
-        $method = '/sendMediaGroup';
+        foreach ($vkPosts as $post) {
+            if (file_exists(storage_path() . DIRECTORY_SEPARATOR . 'databaseForPoorPeople')) {
+                if ($post->date <= file_get_contents(storage_path() . DIRECTORY_SEPARATOR . 'databaseForPoorPeople')) {
+                    continue;
+                }
+            }
 
-        $message = http_build_query([
-            'chat_id' => env('TELEGRAM_CHAT_ID'),
-            'media' => json_encode([
-                [
-                    'type' => 'photo',
-                    'media' => 'https://sun6-5.userapi.com/c855032/v855032396/1a96/DLX742xzfGw.jpg',
-                    'caption' => 'same text'
-                ],
-                [
-                    'type' => 'photo',
-                    'media' => 'https://sun6-1.userapi.com/c851432/v851432003/dc40f/1XlLOPRqqJM.jpg',
-                    'caption' => 'same text'
-                ],
-                [
-                    'type' => 'photo',
-                    'media' => 'https://sun6-3.userapi.com/c848416/v848416887/14e1fd/eq-2ECGx-PE.jpg',
-                    'caption' => 'same text'
-                ]
-            ])
-        ]);
+            list($method, $params) = $this->telegramService->prepareData($post);
 
-        $this->httpClient->request('POST', $baseUrl . $method . '?' . $message)->getBody()->getContents();
+            if (empty($method) || empty($params)) {
+                continue;
+            }
+
+            $this->telegramService->sendToChannel($method, $params);
+            break; // todo: need to delete this
+        }
     }
 
-    private function setHttpClient()
+    private function init()
     {
         $this->httpClient = new Client();
+        $this->vkService = new VkService();
+        $this->telegramService = new TelegramService();
     }
 }
