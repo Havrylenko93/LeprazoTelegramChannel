@@ -2,7 +2,6 @@
 
 namespace App\Jobs\helpers;
 
-use function foo\func;
 use GuzzleHttp\Client,
     App\Jobs\helpers\Interfaces\TelegramServiceInterface;
 
@@ -33,10 +32,14 @@ class TelegramService implements TelegramServiceInterface
         $this->httpClient->request('POST', $baseUrl . $method . '?' . $message);
     }
 
+    /**
+     * @param \stdClass $post
+     * @return array
+     */
     public function prepareData(\stdClass $post): array
     {
         if (!empty($post->attachments) && reset($post->attachments)->type !== 'photo') {
-            return [];
+            return [null, null];
         }
 
         $method = '/sendMessage';
@@ -46,11 +49,11 @@ class TelegramService implements TelegramServiceInterface
         ];
 
         if (!empty($post->attachments) && count($post->attachments) === 1) {
-            // send photo
-            $method = '/sendMessage';
+            $method = '/sendPhoto';
             $params = [
                 'chat_id' => env('TELEGRAM_CHAT_ID'),
-                'photo' => $this->getBiggestPhoto(reset($post->attachments))
+                'photo' => $this->getBiggestPhoto(reset($post->attachments)),
+                'caption' => $post->text
             ];
         } elseif (!empty($post->attachments) && count($post->attachments) > 1) {
             $method = '/sendMediaGroup';
@@ -70,13 +73,18 @@ class TelegramService implements TelegramServiceInterface
             ];
         }
 
-
         return [$method, $params];
     }
 
     private function getBiggestPhoto(\stdClass $attachment): string
     {
-        
+        $inputArrayOfAttachments = (array)$attachment->photo;
+
+        $onlyLinks = array_filter($inputArrayOfAttachments, function ($key) {
+            return preg_match('/photo_(.)/', $key) === 1;
+        }, ARRAY_FILTER_USE_KEY);
+
+        return end($onlyLinks);
     }
 
 }

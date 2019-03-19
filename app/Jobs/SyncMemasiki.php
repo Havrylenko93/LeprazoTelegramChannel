@@ -21,29 +21,11 @@ class SyncMemasiki implements ShouldQueue
     public function handle()
     {
         $this->init();
-        /**
-         * !!! what i need?
-         *
-         * 1) just photo / photos
-         * 2) just text
-         * 3) photo/photos and text
-         *
-         *  Need to foreach all attachments and add biggest from each of them
-         *
-         *
-         * need to check
-         * if post has one attachment ->
-         *          then we need to use SendMessage method
-         * elseif post has more than one attachment ->
-         *          we need to use  sendMediaGroup method and map "text" filed to all of "caption fields"
-         */
         $vkPosts = array_reverse($this->vkService->getVkPosts());
 
         foreach ($vkPosts as $post) {
-            if (file_exists(storage_path() . DIRECTORY_SEPARATOR . 'databaseForPoorPeople')) {
-                if ($post->date <= file_get_contents(storage_path() . DIRECTORY_SEPARATOR . 'databaseForPoorPeople')) {
-                    continue;
-                }
+            if ($this->checkPostCreationDate($post) === true || $this->checkIsPinned($post) === true) {
+                continue;
             }
 
             list($method, $params) = $this->telegramService->prepareData($post);
@@ -53,8 +35,35 @@ class SyncMemasiki implements ShouldQueue
             }
 
             $this->telegramService->sendToChannel($method, $params);
-            break; // todo: need to delete this
+            sleep(10);
+            file_put_contents(storage_path() . DIRECTORY_SEPARATOR . 'databaseForPoorPeople', $post->date);
         }
+    }
+
+    private function checkPostCreationDate(\stdClass $post): bool
+    {
+        $postIsOlder = false;
+
+        if (file_exists(storage_path() . DIRECTORY_SEPARATOR . 'databaseForPoorPeople')) {
+            if ($post->date <= file_get_contents(storage_path() . DIRECTORY_SEPARATOR . 'databaseForPoorPeople')) {
+                $postIsOlder = true;
+            }
+        } else {
+            file_put_contents(storage_path() . DIRECTORY_SEPARATOR . 'databaseForPoorPeople', '1552767083');
+        }
+
+        return $postIsOlder;
+    }
+
+    private function checkIsPinned(\stdClass $post): bool
+    {
+        $isPinned = false;
+
+        if (!empty($post->is_pinned)) {
+            $isPinned = true;
+        }
+
+        return $isPinned;
     }
 
     private function init()
