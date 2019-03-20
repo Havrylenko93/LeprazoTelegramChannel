@@ -35,7 +35,7 @@ class SyncMemasiki implements ShouldQueue
             }
 
             $this->telegramService->sendToChannel($method, $params);
-            sleep(10);
+            sleep(1);
             file_put_contents(storage_path() . DIRECTORY_SEPARATOR . 'databaseForPoorPeople', $post->date);
         }
     }

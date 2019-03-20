@@ -33,15 +33,12 @@ class TelegramService implements TelegramServiceInterface
     }
 
     /**
+     * TODO: need to separate this piece of shit
      * @param \stdClass $post
      * @return array
      */
     public function prepareData(\stdClass $post): array
     {
-        if (!empty($post->attachments) && reset($post->attachments)->type !== 'photo') {
-            return [null, null];
-        }
-
         $method = '/sendMessage';
         $params = [
             'chat_id' => env('TELEGRAM_CHAT_ID'),
@@ -49,6 +46,14 @@ class TelegramService implements TelegramServiceInterface
         ];
 
         if (!empty($post->attachments) && count($post->attachments) === 1) {
+            if (!empty($post->attachments) && reset($post->attachments)->type === 'doc') {
+                $method = '/sendVideo';
+                $params = [
+                    'chat_id' => env('TELEGRAM_CHAT_ID'),
+                    'video' => reset($post->attachments)->doc->url
+                ];
+                return [$method, $params];
+            }
             $method = '/sendPhoto';
             $params = [
                 'chat_id' => env('TELEGRAM_CHAT_ID'),
