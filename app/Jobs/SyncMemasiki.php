@@ -40,6 +40,10 @@ class SyncMemasiki implements ShouldQueue
         }
     }
 
+    /**
+     * @param \stdClass $post
+     * @return bool
+     */
     private function checkPostCreationDate(\stdClass $post): bool
     {
         $postIsOlder = false;
@@ -55,6 +59,10 @@ class SyncMemasiki implements ShouldQueue
         return $postIsOlder;
     }
 
+    /**
+     * @param \stdClass $post
+     * @return bool
+     */
     private function checkIsPinned(\stdClass $post): bool
     {
         $isPinned = false;

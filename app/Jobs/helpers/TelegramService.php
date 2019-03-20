@@ -81,6 +81,10 @@ class TelegramService implements TelegramServiceInterface
         return [$method, $params];
     }
 
+    /**
+     * @param \stdClass $attachment
+     * @return string
+     */
     private function getBiggestPhoto(\stdClass $attachment): string
     {
         $inputArrayOfAttachments = (array)$attachment->photo;
