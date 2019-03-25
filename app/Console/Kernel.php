@@ -16,7 +16,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->call(function () {
             dispatch(new SyncMemasiki());
-        })->everyMinute();
+        })->everyFiveMinutes();
     }
 
     protected function commands()

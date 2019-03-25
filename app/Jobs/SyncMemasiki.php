@@ -24,7 +24,7 @@ class SyncMemasiki implements ShouldQueue
         $vkPosts = array_reverse($this->vkService->getVkPosts());
 
         foreach ($vkPosts as $post) {
-            if ($this->checkPostCreationDate($post) === true || $this->checkIsPinned($post) === true) {
+            if ($this->checkPostCreationDate($post) === true) {
                 continue;
             }
 
@@ -57,21 +57,6 @@ class SyncMemasiki implements ShouldQueue
         }
 
         return $postIsOlder;
-    }
-
-    /**
-     * @param \stdClass $post
-     * @return bool
-     */
-    private function checkIsPinned(\stdClass $post): bool
-    {
-        $isPinned = false;
-
-        if (!empty($post->is_pinned)) {
-            $isPinned = true;
-        }
-
-        return $isPinned;
     }
 
     private function init()

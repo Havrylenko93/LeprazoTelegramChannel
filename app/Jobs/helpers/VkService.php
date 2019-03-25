@@ -7,12 +7,20 @@ use GuzzleHttp\Client,
 
 class VkService implements VkServiceInterface
 {
-    /** @var Client  */
+    /** @var Client */
     private $httpClient;
-    /** @var int  */
+    /** @var int */
     private $count = 100;
-    /** @var int  */
+    /** @var int */
     private $offset = 0;
+    /**
+     * @var array
+     */
+    public static $arrayOfVkGroups = [
+        '-65960786',
+        '-12382740',
+        '-69743495'
+    ];
 
     /**
      * VkService constructor.
@@ -29,16 +37,20 @@ class VkService implements VkServiceInterface
     public function getVkPosts(): array
     {
         $baseUrl = 'https://api.vk.com/method/wall.get';
+        $content = [];
 
-        $content = json_decode($this->httpClient->request('GET', $baseUrl . '?' . http_build_query([
-                'owner_id' => env('VK_OWNER_ID'),
-                'offset' => $this->offset,
-                'count' => $this->count,
-                'v' => env('VK_API_VERSION'),
-                'access_token' => env('VK_ACCESS_TOKEN'),
-            ]))->getBody()->getContents())->response->items;
+        foreach (self::$arrayOfVkGroups as $groupId) {
+            $groupPosts = (array)json_decode($this->httpClient->request('GET', $baseUrl . '?' . http_build_query([
+                    'owner_id' => $groupId,
+                    'offset' => $this->offset,
+                    'count' => $this->count,
+                    'v' => env('VK_API_VERSION'),
+                    'access_token' => env('VK_ACCESS_TOKEN'),
+                ]))->getBody()->getContents())->response->items;
+            $content = array_merge($content, $groupPosts);
+        }
 
-        return (array)$content;
+        return $content;
     }
 
     /**
