@@ -24,17 +24,22 @@ class SyncMemasiki implements ShouldQueue
         $vkPosts = array_reverse($this->vkService->getVkPosts());
 
         foreach ($vkPosts as $post) {
-            if ($this->checkPostCreationDate($post) === true) {
+
+            try {
+
+                if ($this->checkPostCreationDate($post) === true) {
+                    throw new \Exception('current post is older');
+                }
+                list($method, $params) = $this->telegramService->prepareData($post);
+
+                if (empty($method) || empty($params)) {
+                    throw new \Exception('Oooops! Something went wrong');
+                }
+                $this->telegramService->sendToChannel($method, $params);
+            } catch (\Exception $exception) {
                 continue;
             }
 
-            list($method, $params) = $this->telegramService->prepareData($post);
-
-            if (empty($method) || empty($params)) {
-                continue;
-            }
-
-            $this->telegramService->sendToChannel($method, $params);
             sleep(1);
             file_put_contents(storage_path() . DIRECTORY_SEPARATOR . 'databaseForPoorPeople', $post->date);
         }

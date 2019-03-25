@@ -39,6 +39,10 @@ class TelegramService implements TelegramServiceInterface
      */
     public function prepareData(\stdClass $post): array
     {
+        if (empty($post->attachments) || reset($post->attachments)->type !== 'photo') {
+            return [null, null];
+        }
+
         $method = '/sendMessage';
         $params = [
             'chat_id' => env('TELEGRAM_CHAT_ID'),
